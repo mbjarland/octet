@@ -147,7 +147,6 @@
 
 (t/deftest indexed-specs-write
   (let [spec (buf/spec (buf/int32) (buf/int16))
-        _ (println "spec" spec)
         buffer (buf/allocate 12)
         data [1 4]]
     (t/is (= (buf/write! buffer data spec) 6))
@@ -250,6 +249,50 @@
     (let [[readed data] (buf/read* buffer spec)]
       (t/is (= readed 18))
       (t/is (= data ["1234567890" 1000])))))
+
+(t/deftest spec-data-with-assoc-ref-types-single
+  (let [spec (buf/spec :bogus1 (buf/int32)
+                       :length (buf/int32)
+                       :bogus2 (buf/int32)
+                       :varchar (buf/ref-string* :length))
+        buffer (buf/allocate 15)]
+    (buf/write! buffer {:bogus1 1
+                        :length 3
+                        :bogus2 1
+                        :varchar "123"} spec)
+    (let [[readed data] (buf/read* buffer spec)]
+      (t/is (= readed 15))
+      (t/is (= data  {:bogus1 1
+                      :length 3
+                      :bogus2 1
+                      :varchar "123"})))))
+
+(t/deftest spec-data-with-assoc-ref-types-interleaved
+  (let [spec (buf/spec :bogus1  (buf/int32)
+                       :length1 (buf/int32)
+                       :bogus2  (buf/int32)
+                       :length2 (buf/int32)
+                       :varchar1 (buf/ref-string* :length1)
+                       :bogus3  (buf/int16)
+                       :varchar2 (buf/ref-string* :length2))
+        buffer (buf/allocate 24)]
+    (buf/write! buffer {:bogus1 12
+                        :length1 3
+                        :bogus2 23
+                        :length2 3
+                        :varchar1 "123"
+                        :bogus3 34
+                        :varchar2 "abc"} spec)
+    (let [[readed data] (buf/read* buffer spec)]
+      (t/is (= readed 24))
+      (t/is (= data  {:bogus1 12
+                      :length1 3
+                      :bogus2 23
+                      :length2 3
+                      :varchar1 "123"
+                      :bogus3 34
+                      :varchar2 "abc"})))))
+
 
 (t/deftest spec-composition
   (let [spec (buf/spec (buf/spec (buf/int32) (buf/int32))

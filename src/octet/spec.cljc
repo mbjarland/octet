@@ -197,12 +197,14 @@
   [& params]
   (let [numparams (count params)]
     (cond
-      (every? #(satisfies? ISpec %) params)
+      (every? #(or (satisfies? ISpecWithRef %)
+                   (satisfies? ISpec %)) params)
       (apply indexed-spec params)
 
       (and (even? numparams)
            (keyword? (first params))
-           (satisfies? ISpec (second params)))
+           (or (satisfies? ISpecWithRef (second params))
+               (satisfies? ISpec (second params))))
       (apply associative-spec params)
 
       :else

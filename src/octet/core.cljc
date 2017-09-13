@@ -32,6 +32,7 @@
             [octet.spec.basic :as basic-spec]
             [octet.spec.string :as string-spec]
             [octet.spec.collections :as coll-spec]
+            [octet.spec.reference :as ref-spec]
             [octet.buffer :as buffer]))
 
 (util/defalias compose spec/compose)
@@ -41,6 +42,9 @@
 (util/defalias string string-spec/string)
 (util/defalias string* string-spec/string*)
 (util/defalias vector* coll-spec/vector*)
+(util/defalias ref-string* ref-spec/ref-string*) ;; TODO: move ref to ref-spec
+(util/defalias ref-bytes* ref-spec/ref-bytes*)
+
 (util/defalias int16 basic-spec/int16)
 (util/defalias uint16 basic-spec/uint16)
 (util/defalias int32 basic-spec/int32)

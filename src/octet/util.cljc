@@ -45,30 +45,11 @@
                  "assoc-ordered expects even number of arguments after map/vector, found odd number")))
       ret)))
 
- ;
- ;          0    2    4    6     8    A    C    E
- ;00000000: 4869 6572 2069 7374  2065 696e 2042 6569  Hier ist ein Bei
- ;00000010: 7370 6965 6c74 6578  742e 2044 6572 2048  spieltext. Der H
- ;00000020: 6578 6475 6d70 2069  7374 2061 7566 2064  exdump ist auf d
- ;00000030: 6572 206c 696e 6b65  6e20 5365 6974 6520  er linken Seite
- ;00000040: 7a75 2073 6568 656e  2e20 4e65 7565 205a  zu sehen. Neue Z
- ;00000050: 6569 6c65 6e20 6f64  6572 2041 6273 c3a4  eilen oder Abs..
- ;00000060: 747a 6520 7369 6e64  2064 616e 6e20 6175  tze sind dann au
- ;00000070: 6368 2022 5a65 6963  6865 6e22 206d 6974  ch "Zeichen" mit
- ;00000080: 2065 696e 656d 2062  6573 7469 6d6d 7465   einem bestimmte
- ;00000090: 6e20 436f 6465 2028  3061 2900 0000 0000  n Code (0a).....
-
-
-
-
 ;;
 ;; Hexdumps
 ;;
 
-(def j #(clojure.string/join "" %))
-(def jnl #(clojure.string/join \newline %))
 
-; formerly hexdump-bytes
 (defn- bytes->hex [^bytes bytes]
   "converts a byte array to an ascii hex string"
   (let [[f & r] bytes
@@ -87,23 +68,6 @@
        (map byte->ascii)
        (partition 16 16 "                ")
        (map join)))
-
-(defn- to-ascii
-  "Converts character to it's ascii representation"
-  [c]
-  (let [c (mod c 256)]
-    (if (<= 0x1f c 0x7f)
-      (char c)
-      \.)))
-
-(defn- chardump-bytes
-  "Returns chardump of bytes"
-  [bytes]
-  (->> bytes
-       (map to-ascii)
-       j
-       (partition-all 16)
-       (map #(format "%-16s" (j %)))))
 
 (defn- format-hex-line [^String hex-line]
   (->> hex-line
@@ -140,6 +104,26 @@
         (instance? String x)
         (copy-bytes (.getBytes x) offset size)))
 
+
+; Example usage of hex-dump
+;
+;(hex-dump (byte-array (range 200)) :frame true)
+; --------------------------------------------------------------------
+;|00000000: 0001 0203 0405 0607  0809 0a0b 0c0d 0e0f  ................|
+;|00000010: 1011 1213 1415 1617  1819 1a1b 1c1d 1e1f  ................|
+;|00000020: 2021 2223 2425 2627  2829 2a2b 2c2d 2e2f   !"#$%&'()*+,-./|
+;|00000030: 3031 3233 3435 3637  3839 3a3b 3c3d 3e3f  0123456789:;<=>?|
+;|00000040: 4041 4243 4445 4647  4849 4a4b 4c4d 4e4f  @ABCDEFGHIJKLMNO|
+;|00000050: 5051 5253 5455 5657  5859 5a5b 5c5d 5e5f  PQRSTUVWXYZ[\]^_|
+;|00000060: 6061 6263 6465 6667  6869 6a6b 6c6d 6e6f  `abcdefghijklmno|
+;|00000070: 7071 7273 7475 7677  7879 7a7b 7c7d 7e7f  pqrstuvwxyz{|}~|
+;|00000080: 8081 8283 8485 8687  8889 8a8b 8c8d 8e8f  ................|
+;|00000090: 9091 9293 9495 9697  9899 9a9b 9c9d 9e9f  ................|
+;|000000a0: a0a1 a2a3 a4a5 a6a7  a8a9 aaab acad aeaf  ................|
+;|000000b0: b0b1 b2b3 b4b5 b6b7  b8b9 babb bcbd bebf  ................|
+;|000000c0: c0c1 c2c3 c4c5 c6c7                       ........        |
+; --------------------------------------------------------------------
+
 (defn hex-dump
   "Create hex dump. Accepts byte array, java.nio.ByteBuffer,
   io.netty.buffer.ByteBuf, or String as first argument. Offset will
@@ -151,7 +135,7 @@
   [x & {:keys [offset size print frame]
                    :or   {offset 0
                           print  true
-                          frame false}}]
+                          frame true}}]
   {:pre [(not (nil? x))]}
   (let [bytes (get-dump-bytes x offset size)
         size (if (nil? size) (alength bytes) size)
@@ -165,7 +149,3 @@
         lines (if frame (concat [header] lines [header]) lines)
         result (join \newline lines)]
     (if print (println result) result)))
-
-
-
-

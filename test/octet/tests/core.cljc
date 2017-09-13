@@ -147,6 +147,7 @@
 
 (t/deftest indexed-specs-write
   (let [spec (buf/spec (buf/int32) (buf/int16))
+        _ (println "spec" spec)
         buffer (buf/allocate 12)
         data [1 4]]
     (t/is (= (buf/write! buffer data spec) 6))

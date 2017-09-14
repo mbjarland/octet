@@ -156,6 +156,10 @@
 
 ;; --- Spec Constructors
 
+(defn- spec? [s]
+  (or (satisfies? ISpecWithRef s)
+      (satisfies? ISpec s)))
+
 (defn- associative-spec
   [& params]
   (let [data (mapv vec (partition 2 params))
@@ -197,14 +201,12 @@
   [& params]
   (let [numparams (count params)]
     (cond
-      (every? #(or (satisfies? ISpecWithRef %)
-                   (satisfies? ISpec %)) params)
+      (every? spec? params)
       (apply indexed-spec params)
 
       (and (even? numparams)
            (keyword? (first params))
-           (or (satisfies? ISpecWithRef (second params))
-               (satisfies? ISpec (second params))))
+           (spec? (second params)))
       (apply associative-spec params)
 
       :else

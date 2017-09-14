@@ -32,44 +32,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- ref-size [type data]
-  (println "ref-size type" type "data" data)
   (if (satisfies? spec/ISpecSize type)
     (.size type)
     (.size* type data)))
 
-(defn- ref-len-offset-map [ref-kw types data]
-  (reduce-kv
-    (fn [acc kw type]
-      (if (= ref-kw kw)
-        (reduced acc)
-        (+ acc (ref-size type (kw data)))))
-    0
-    types))
-
-(defn- ref-len-offset-vec [ref-index types data]
-  (reduce
-    (fn [acc index]
-      (if (= ref-index index)
-        (reduced acc)
-        (+ acc (ref-size (get types index) (get data index)))))
-    0
-    types))
+(defn- coerce-types [types]
+  "to make it terser to handle both maps (assoc spec) and seq/vector
+  (indexed spec), we coerce the seq/vector types to maps where the
+  keys are indexes"
+  (cond (map? types) types
+        (or (seq? types)
+            (vector? types)) (apply array-map (interleave (range) types))
+        :else (throw (ex-info "invalid type structure, not map, seq or vector"
+                              {:type-structure types}))))
 
 (defn- ref-len-offset [ref-kw-or-index types data]
-  (println ">>>> types" (type types) "value" types)
-  (cond (map? types) (ref-len-offset-map ref-kw-or-index types data)
-        (seq? types)   (ref-len-offset-vec ref-kw-or-index (apply vector types) data)
-        (vector? types)  (ref-len-offset-vec ref-kw-or-index types data)
-        :else (throw (ex-info "invalid type structure, not map nor vector"
-                              {:ref-kw-or-index ref-kw-or-index
-                               :type-structure  types
-                               :data            data}))))
+  (reduce-kv
+    (fn [acc kw-or-index type]
+      (if (= ref-kw-or-index kw-or-index)
+        (reduced acc)
+        (+ acc (ref-size type (get data kw-or-index)))))
+    0
+    types))
 
 (defn- ref-write* [ref-kw-or-index buff pos value types data]
   (let [input      (if (string? value) (string-spec/string->bytes value) value)
         length     (count input)
+        types      (coerce-types types)
         len-offset (ref-len-offset ref-kw-or-index types data)
-        len-type   (if (map? types) (ref-kw-or-index types) (get types ref-kw-or-index))]
+        len-type   (get types ref-kw-or-index)]
     (.write len-type buff len-offset length)
     (buffer/write-bytes buff pos length input)
     (+ length)))

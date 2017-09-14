@@ -32,7 +32,21 @@
 
      (defn equals?
        [^bytes a ^bytes b]
-       (java.util.Arrays/equals a b)))
+       (java.util.Arrays/equals a b))
+
+     (def bytes-type (Class/forName "[B"))
+
+     (defn bytes->vecs [m]
+       "test helper - byte arrays do not compare to
+       (= a b) true, so we convert maps with byte
+       array values to maps with vectors of bytes for
+       comparison"
+       (into {}
+             (map (fn [[k v]]
+                    (if (= (type v) bytes-type)
+                      (vector k (apply (partial vector-of :byte) v))
+                      (vector k v)))
+                  m))))
 
    :cljs
    (do
@@ -250,7 +264,18 @@
       (t/is (= readed 18))
       (t/is (= data ["1234567890" 1000])))))
 
-(t/deftest spec-data-with-assoc-ref-types-single
+(t/deftest spec-data-with-indexed-ref-string-single
+  (let [spec (buf/spec (buf/int32)
+                       (buf/int32)
+                       (buf/int32)
+                       (buf/ref-string* 1))
+        buffer (buf/allocate 15)]
+    (buf/write! buffer [1 3 1 "123"] spec)
+    (let [[readed data] (buf/read* buffer spec)]
+      (t/is (= readed 15))
+      (t/is (= data  [1 3 1 "123"])))))
+
+(t/deftest spec-data-with-assoc-ref-string-single
   (let [spec (buf/spec :bogus1 (buf/int32)
                        :length (buf/int32)
                        :bogus2 (buf/int32)
@@ -267,7 +292,7 @@
                       :bogus2 1
                       :varchar "123"})))))
 
-(t/deftest spec-data-with-assoc-ref-types-interleaved
+(t/deftest spec-data-with-assoc-ref-strings-interleaved
   (let [spec (buf/spec :bogus1  (buf/int32)
                        :length1 (buf/int32)
                        :bogus2  (buf/int32)
@@ -292,6 +317,64 @@
                       :varchar1 "123"
                       :bogus3 34
                       :varchar2 "abc"})))))
+
+(t/deftest spec-data-with-assoc-ref-bytes-single
+  (let [barr (byte-array [7 13 17])
+        spec (buf/spec :bogus1 (buf/int32)
+                       :length (buf/int32)
+                       :bogus2 (buf/int32)
+                       :varbytes (buf/ref-bytes* :length))
+        buffer (buf/allocate 15)]
+    (buf/write! buffer {:bogus1   1
+                        :length   3
+                        :bogus2   1
+                        :varbytes barr} spec)
+    (let [[readed data] (buf/read* buffer spec)]
+      (t/is (= readed 15))
+      (t/is (= (bytes->vecs data)
+               (bytes->vecs {:bogus1   1
+                             :length   3
+                             :bogus2   1
+                             :varbytes barr}))))))
+
+(t/deftest spec-data-with-assoc-ref-bytes-interleaved
+  (let [barr1 (byte-array [7 13 17])
+        barr2 (byte-array [19 23 29])
+        spec (buf/spec :bogus1 (buf/int32)
+                       :length1 (buf/int32)
+                       :bogus2 (buf/int32)
+                       :length2 (buf/int32)
+                       :varbytes1 (buf/ref-bytes* :length1)
+                       :bogus3 (buf/int16)
+                       :varbytes2 (buf/ref-bytes* :length2))
+        buffer (buf/allocate 24)]
+    (buf/write! buffer {:bogus1    12
+                        :length1   3
+                        :bogus2    23
+                        :length2   3
+                        :varbytes1 barr1
+                        :bogus3    34
+                        :varbytes2 barr2} spec)
+    (let [[readed data] (buf/read* buffer spec)]
+      (t/is (= readed 24))
+      (t/is (= (bytes->vecs data)
+               (bytes->vecs {:bogus1    12
+                             :length1   3
+                             :bogus2    23
+                             :length2   3
+                             :varbytes1 barr1
+                             :bogus3    34
+                             :varbytes2 barr2}))))))
+
+
+
+
+
+
+
+
+
+
 
 
 (t/deftest spec-composition

@@ -32,6 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- ref-size [type data]
+  (println "ref-size type" type "data" data)
   (if (satisfies? spec/ISpecSize type)
     (.size type)
     (.size* type data)))
@@ -55,8 +56,10 @@
     types))
 
 (defn- ref-len-offset [ref-kw-or-index types data]
+  (println ">>>> types" (type types) "value" types)
   (cond (map? types) (ref-len-offset-map ref-kw-or-index types data)
-        (vector? types) (ref-len-offset-vec ref-kw-or-index types data)
+        (seq? types)   (ref-len-offset-vec ref-kw-or-index (apply vector types) data)
+        (vector? types)  (ref-len-offset-vec ref-kw-or-index types data)
         :else (throw (ex-info "invalid type structure, not map nor vector"
                               {:ref-kw-or-index ref-kw-or-index
                                :type-structure  types
@@ -73,7 +76,8 @@
 
 (defn- ref-read* [ref-kw-or-index buff pos parent]
   (let [datasize (cond (map? parent) (ref-kw-or-index parent)
-                       (vector? parent) (get parent ref-kw-or-index)
+                       (or (seq? parent) (vector? parent))
+                       (get parent ref-kw-or-index)
                        :else (throw (ex-info
                                       (str "bad ref-string*/ref-bytes* length reference  - " ref-kw-or-index)
                                       {:length-kw ref-kw-or-index

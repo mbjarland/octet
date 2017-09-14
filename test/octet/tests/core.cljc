@@ -277,11 +277,11 @@
 
 (t/deftest spec-data-with-indexed-ref-string-interleaved
   ;                 0 1 2 3 4     5 6
-  (let [datas [[22 [0 1 0 3 "a"   0 "xyz"]]
+  (let [datas [[22 [0 1 0 3 "a",, 0 "xyz"]] 
                [24 [9 3 7 3 "abc" 5 "xyz"]]
-               [18 [0 0 0 0 ""    0 ""]]
-               [20 [1 1 1 1 "a"   1 "x"]]
-               [21 [9 0 7 3 ""    9 "xyz"]]
+               [18 [0 0 0 0 "",,, 0 ""]]
+               [20 [1 1 1 1 "a",, 1 "x"]]
+               [21 [9 0 7 3 "",,, 9 "xyz"]]
                [21 [9 3 7 0 "abc" 5 ""]]]
         spec  (buf/spec (buf/int32)                         ;0
                         (buf/int32)                         ;1
@@ -290,12 +290,12 @@
                         (buf/ref-string* 1)                 ;4
                         (buf/int16)                         ;5
                         (buf/ref-string* 3))]               ;6
-        (doseq [[count data] datas]
-          (let [buffer (buf/allocate count)]
-            (buf/write! buffer data spec)
-            (let [[c d] (buf/read* buffer spec)]
-              (t/is (= d data))
-              (t/is (= c count)))))))
+    (doseq [[count data] datas]
+      (let [buffer (buf/allocate count)]
+        (buf/write! buffer data spec)
+        (let [[c d] (buf/read* buffer spec)]
+          (t/is (= d data))
+          (t/is (= c count)))))))
 
 (t/deftest spec-data-with-assoc-ref-string-single
   (let [spec (buf/spec :bogus1 (buf/int32)
